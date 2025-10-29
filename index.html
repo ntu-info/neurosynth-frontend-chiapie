@@ -2,45 +2,307 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Fetch /terms Demo</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Neurosynth Search</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
-<body>
-  <h1>Fetch https://mil.psy.ntu.edu.tw:5000/terms</h1>
-  <button id="btn">Fetch again</button>
-  <pre id="out">Loading…</pre>
+<body class="bg-gray-50 min-h-screen">
+  <div class="container mx-auto px-4 py-8 max-w-6xl">
+    <!-- Header -->
+    <header class="text-center mb-8">
+      <h1 class="text-4xl font-bold text-gray-800 mb-2 flex items-center justify-center gap-2">
+        <i class="fas fa-brain text-blue-600"></i>
+        Neurosynth Search
+      </h1>
+      <p class="text-gray-600">Search and explore brain research studies</p>
+    </header>
+
+    <!-- Search Interface (All Terms removed; keep style) -->
+    <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+      <div class="grid md:grid-cols-2 gap-6">
+        <!-- Term Search -->
+        <div class="space-y-4">
+          <h3 class="text-lg font-semibold text-gray-800 flex items-center gap-2">
+            <i class="fas fa-search text-green-600"></i> Search Terms
+          </h3>
+          <div class="flex">
+            <input id="termInput" type="text" placeholder="Enter a term (e.g., emotion, language)"
+              class="flex-1 px-4 py-2 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-green-500" />
+            <button id="searchTermBtn" class="bg-green-600 text-white px-4 py-2 rounded-r-lg hover:bg-green-700 transition-colors">
+              <i class="fas fa-search"></i>
+            </button>
+          </div>
+          <p class="text-sm text-gray-500">Suggestions appear as you type, click a term to see studies.</p>
+        </div>
+
+        <!-- Logical Query -->
+        <div class="space-y-4">
+          <h3 class="text-lg font-semibold text-gray-800 flex items-center gap-2">
+            <i class="fas fa-filter text-purple-600"></i> Logical Query
+          </h3>
+          <div class="flex">
+            <input id="queryInput" type="text" placeholder='Example: emotion AND memory'
+              class="flex-1 px-4 py-2 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-purple-500" />
+            <button id="searchQueryBtn" class="bg-purple-600 text-white px-4 py-2 rounded-r-lg hover:bg-purple-700 transition-colors">
+              <i class="fas fa-filter"></i>
+            </button>
+          </div>
+          <p class="text-sm text-gray-500">Use AND · OR · NOT (case-insensitive).</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Loading -->
+    <div id="loading" class="hidden text-center py-8">
+      <div class="inline-flex items-center px-4 py-2 font-semibold leading-6 text-sm shadow rounded-md text-blue-600 bg-white">
+        <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor"
+            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 
+            014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+        Loading...
+      </div>
+    </div>
+
+    <!-- Error -->
+    <div id="error" class="hidden bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+      <div class="flex items-center">
+        <i class="fas fa-exclamation-triangle text-red-600 mr-2"></i>
+        <h4 class="text-red-800 font-semibold">Error</h4>
+      </div>
+      <p id="errorMessage" class="text-red-700 mt-2"></p>
+    </div>
+
+    <!-- Results -->
+    <div id="results" class="bg-white rounded-lg shadow-md p-6">
+      <h3 class="text-xl font-semibold text-gray-800 mb-4 flex items-center gap-2">
+        <i class="fas fa-chart-bar text-blue-600"></i> Results
+      </h3>
+      <div id="resultsContent" class="text-gray-700">
+        Start typing a term or enter a logical query.
+      </div>
+    </div>
+  </div>
 
   <script>
-    async function fetchTerms() {
-      const out = document.getElementById('out');
-      out.textContent = 'Requesting…';
-      try {
-        const resp = await fetch('https://mil.psy.ntu.edu.tw:5000/terms');
-        let info = `HTTP ${resp.status} ${resp.statusText}\n`;
-        const ct = resp.headers.get('content-type') || '';
+  const BASE_URL = 'https://hpc.psy.ntu.edu.tw:5000';
 
-        if (!resp.ok) {
-          const text = await resp.text();
-          out.textContent = info + '\n' + text;
-          return;
-        }
+  const loading = document.getElementById('loading');
+  const error = document.getElementById('error');
+  const errorMessage = document.getElementById('errorMessage');
+  const resultsContent = document.getElementById('resultsContent');
+  const termInput = document.getElementById('termInput');
+  const searchTermBtn = document.getElementById('searchTermBtn');
+  const queryInput = document.getElementById('queryInput');
+  const searchQueryBtn = document.getElementById('searchQueryBtn');
 
-        if (ct.includes('application/json')) {
-          const data = await resp.json();
-          out.textContent = info + '\n' + JSON.stringify(data, null, 2);
-        } else {
-          const text = await resp.text();
-          out.textContent = info + '\n' + text;
-        }
-      } catch (err) {
-        document.getElementById('out').textContent =
-          'Error: ' + (err && err.message ? err.message : String(err)) +
-          '\n\nCommon causes:\n1) CORS not allowed by the server\n2) Opening this file via file:// instead of a local server\n3) Network/server issues';
-      }
+  let debounceTimer;
+  let allTerms = [];
+  let allTermsReady = false;
+
+  const showLoading = () => { loading.classList.remove('hidden'); error.classList.add('hidden'); };
+  const hideLoading = () => loading.classList.add('hidden');
+  const showError = msg => { hideLoading(); errorMessage.textContent = msg; error.classList.remove('hidden'); };
+  const esc = t => { const d = document.createElement('div'); d.textContent = t ?? ''; return d.innerHTML; };
+
+  async function fetchJSON(url) {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return res.json();
+  }
+
+  function normalizeTermsPayload(data) {
+    if (!data) return [];
+    if (Array.isArray(data.terms) && typeof data.terms[0] === 'string') return [...new Set(data.terms)].map(t => ({ term: t }));
+    if (Array.isArray(data.terms) && data.terms[0] && typeof data.terms[0] === 'object') return data.terms.map(x => ({ term: x.term || String(x).trim() })).filter(x => x.term);
+    if (Array.isArray(data.related)) return data.related.map(r => ({ term: r.term }));
+    if (Array.isArray(data) && typeof data[0] === 'string') return [...new Set(data)].map(t => ({ term: t }));
+    if (Array.isArray(data.results)) {
+      const withTerm = data.results.filter(r => r && r.term).map(r => ({ term: r.term }));
+      if (withTerm.length) return withTerm;
+    }
+    if (!Array.isArray(data) && typeof data === 'object') return Object.keys(data).map(k => ({ term: k }));
+    return [];
+  }
+
+  function rankAndSortTerms(candidates, query) {
+    const q = query.toLowerCase();
+    const singular = q.endsWith('s') ? q.slice(0, -1) : q;
+    const plural = q.endsWith('s') ? q : q + 's';
+    function score(t) {
+      const term = (t.term || '').toLowerCase();
+      if (term === q) return 1000;
+      if (term === plural || term === singular) return 900;
+      if (term.startsWith(q)) return 800;
+      if (term.includes(q)) return 700;
+      return 100 - Math.abs(term.length - q.length);
+    }
+    return [...new Map(candidates.map(x => [x.term.toLowerCase(), x])).values()]
+      .sort((a, b) => {
+        const sa = score(a), sb = score(b);
+        if (sb !== sa) return sb - sa;
+        return a.term.localeCompare(b.term);
+      });
+  }
+
+  function renderTerms(title, related) {
+    hideLoading(); error.classList.add('hidden');
+    let html = `<h4 class="text-lg font-semibold text-gray-800 mb-4">${esc(title)}</h4>`;
+    if (!related || related.length === 0) {
+      html += `<p class="text-gray-600">No related terms found.</p>`;
+    } else {
+      html += `<div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">`;
+      related.forEach(r => {
+        const label = typeof r === 'string' ? r : r.term;
+        html += `<button onclick="fetchStudies('${esc(label)}')" 
+                  class="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm hover:bg-blue-200 transition">
+                  ${esc(label)}
+                </button>`;
+      });
+      html += `</div>`;
+    }
+    resultsContent.innerHTML = html;
+  }
+
+  function renderStudies(title, data) {
+    hideLoading(); error.classList.add('hidden');
+    const studies = Array.isArray(data?.results) ? data.results : [];
+    let html = `<h4 class="text-lg font-semibold text-gray-800 mb-4">${esc(title)}</h4>`;
+    if (!studies.length) {
+      html += `<p class="text-gray-600">No studies found.</p>`;
+    } else {
+      html += `<p class="text-sm text-gray-500 mb-3">Showing ${Math.min(50, studies.length)} of ${data.count ?? studies.length}</p>`;
+      html += `<div class="space-y-3 max-h-[28rem] overflow-y-auto">`;
+      studies.slice(0, 50).forEach((s, idx) => {
+        const sid = s.study_id || s.id || `row-${idx}`;
+        html += `<div class="border border-gray-200 rounded-lg p-3">
+                   <h5 class="font-semibold text-gray-800">${esc(s.title || 'Untitled Study')}</h5>
+                   <p class="text-sm text-gray-600">${esc(s.authors || '')}</p>
+                   <p class="text-sm italic text-gray-500">${esc(s.journal || '')}${s.year ? ` (${esc(s.year)})` : ''}</p>
+                   <button class="mt-2 text-indigo-600 text-sm hover:underline" onclick="toggleAbstract('${esc(String(sid))}')">
+                     Show abstract
+                   </button>
+                   <div id="abs-${esc(String(sid))}" class="hidden mt-2 text-sm text-gray-700"></div>
+                 </div>`;
+      });
+      html += `</div>`;
+    }
+    resultsContent.innerHTML = html;
+  }
+
+  // 🔧 fixed abstract toggle
+  async function toggleAbstract(id) {
+    const el = document.getElementById(`abs-${id}`);
+    if (!el) return;
+    if (!el.classList.contains('hidden')) {
+      el.classList.add('hidden'); el.innerHTML = ''; return;
+    }
+    el.innerHTML = `<span class="text-gray-500">Abstract unavailable (not provided by server).</span>`;
+    el.classList.remove('hidden');
+  }
+  window.toggleAbstract = toggleAbstract;
+
+  async function searchTermExact(term) {
+    if (!term.trim()) return;
+    showLoading();
+    try {
+      const data = await fetchJSON(`${BASE_URL}/terms/${encodeURIComponent(term)}`);
+      const related = Array.isArray(data.related) ? data.related.map(r => ({ term: r.term })) : [];
+      const ordered = rankAndSortTerms(related, term).map(o => ({ term: o.term }));
+      renderTerms(`Related Terms for "${term}"`, ordered);
+    } catch (e) { showError(`Failed to fetch related terms: ${e.message}`); }
+  }
+
+  async function searchQueryLogical(queryRaw) {
+    const q = (queryRaw || '').trim();
+    if (!q) return;
+    const normalized = q.replace(/\b(AND|OR|NOT)\b/ig, m => m.toUpperCase());
+
+    const partsOR = normalized.split(/\s+OR\s+/i).map(s => s.trim()).filter(Boolean);
+    async function studiesForTerm(t) {
+      const data = await fetchJSON(`${BASE_URL}/query/${encodeURIComponent(t)}/studies`);
+      return Array.isArray(data.results) ? data.results : [];
     }
 
-    document.getElementById('btn').addEventListener('click', fetchTerms);
-    fetchTerms();
-  </script>
-</body>
-</html>
+    async function evalChunk(chunk) {
+      const andParts = chunk.split(/\s+AND\s+/i).map(s => s.trim()).filter(Boolean);
+      async function evalNot(expr) {
+        const notParts = expr.split(/\s+NOT\s+/i).map(s => s.trim()).filter(Boolean);
+        const base = await studiesForTerm(notParts[0]);
+        if (notParts.length === 1) return base;
+        const subtractSets = await Promise.all(notParts.slice(1).map(studiesForTerm));
+        const subtractIds = new Set(subtractSets.flat().map(x => x.id || x.study_id));
+        return base.filter(x => !subtractIds.has(x.id || x.study_id));
+      }
 
+      const andSets = [];
+      for (const p of andParts) andSets.push(await evalNot(p));
+      if (andSets.length === 0) return [];
+      if (andSets.length === 1) return andSets[0];
+
+      const idCounts = new Map();
+      andSets.forEach(arr => arr.forEach(s => {
+        const k = s.id || s.study_id;
+        idCounts.set(k, (idCounts.get(k) || 0) + 1);
+      }));
+      const need = andSets.length;
+      const byId = new Map(andSets.flat().map(s => [s.id || s.study_id, s]));
+      return [...idCounts.entries()]
+        .filter(([_, c]) => c === need)
+        .map(([k]) => byId.get(k));
+    }
+
+    showLoading();
+    try {
+      const chunkResults = [];
+      for (const c of partsOR) chunkResults.push(await evalChunk(c));
+      const byId = new Map(chunkResults.flat().map(s => [s.id || s.study_id, s]));
+      const final = [...byId.values()];
+      renderStudies(`Studies for "${normalized}"`, { results: final, count: final.length });
+    } catch (e) { showError(`Failed to execute query: ${e.message}`); }
+  }
+
+  async function fetchStudies(term) {
+    showLoading();
+    try {
+      const data = await fetchJSON(`${BASE_URL}/query/${encodeURIComponent(term)}/studies`);
+      renderStudies(`Studies related to "${term}"`, data);
+    } catch (e) { showError(`Failed to fetch studies: ${e.message}`); }
+  }
+  window.fetchStudies = fetchStudies;
+
+  termInput.addEventListener('input', () => {
+    clearTimeout(debounceTimer);
+    const q = termInput.value.trim();
+    if (!q) return;
+    debounceTimer = setTimeout(() => {
+      if (allTermsReady) {
+        const lc = q.toLowerCase();
+        const matches = rankAndSortTerms(
+          allTerms.filter(t => (t.term || '').toLowerCase().includes(lc)),
+          q
+        ).slice(0, 40);
+        if (matches.length > 0) {
+          renderTerms(`Matching Terms for "${q}"`, matches);
+          return;
+        }
+      }
+      searchTermExact(q);
+    }, 250);
+  });
+
+  searchTermBtn.addEventListener('click', () => searchTermExact(termInput.value));
+  termInput.addEventListener('keypress', e => { if (e.key === 'Enter') searchTermExact(termInput.value); });
+  searchQueryBtn.addEventListener('click', () => searchQueryLogical(queryInput.value));
+  queryInput.addEventListener('keypress', e => { if (e.key === 'Enter') searchQueryLogical(queryInput.value); });
+
+  window.addEventListener('load', async () => {
+    try {
+      const data = await fetchJSON(`${BASE_URL}/terms`);
+      allTerms = normalizeTermsPayload(data);
+      allTermsReady = allTerms.length > 0;
+    } catch { allTerms = []; allTermsReady = false; }
+  });
+</script>

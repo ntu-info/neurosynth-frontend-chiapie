@@ -1,0 +1,24 @@
+{
+  "metadata": {
+    "title": "Frontend sprint plan for research site",
+    "dates": {
+      "created": "10/28/2025 0:11:25",
+      "updated": "10/28/2025 0:11:37",
+      "exported": "10/28/2025 21:29:23"
+    },
+    "link": "https://claude.ai/chat/dd80db07-9ab9-49b6-9efc-d30b1d59699f",
+    "powered_by": "Claude Exporter (https://www.claudexporter.com)"
+  },
+  "messages": [
+    {
+      "role": "Prompt",
+      "time": "10/28/2025, 12:11:26 AM",
+      "say": "write a simple and brief plan.md for this frontend sprint goal\n\n\ni want to host my page using github page free\n\n\nSprint Goal: Build an AJAX-based, pretty, & publicly available frontend using Tailwind/BootstrapLinks to an external site. (among other JS libraries) for Tren's backend @ https://mil.psy.ntu.edu.tw:5000 :\n \n/terms : look up all available terms\n/terms/: look up terms associated with t1\n/query//studies: logical search\n\n\nTren’s backend\nServer: https://mil.psy.ntu.edu.tw:5000\nAPI endpoints:\n    \"/terms\",\n    \"/terms/\",\n    \"/query//studies\",\n\n\nQuery examples:\nhttps://mil.psy.ntu.edu.tw:5000/terms\nhttps://mil.psy.ntu.edu.tw:5000/terms/amygdala\nhttps://mil.psy.ntu.edu.tw:5000/query/amygdala%20not%20emotion/studies"
+    },
+    {
+      "role": "Response",
+      "time": "10/28/2025, 12:11:37 AM",
+      "say": "I'll create a simple sprint plan for your GitHub Pages frontend project.\n\n\nCreate File: Create a sprint plan for AJAX frontend project hosted on GitHub Pages\n\n\nView your plan\n\n\nI've created a concise sprint plan that breaks down your goal into 4 user stories (one per API endpoint plus deployment) and lists the key technical tasks. It's structured to keep you focused on the essentials for GitHub Pages hosting."
+    }
+  ]
+}
