@@ -1,7 +1,7 @@
 # 🧠 Neurosynth Frontend
 
 A responsive web frontend for exploring and querying neural studies using the Neurosynth backend API.  
-🔗 **Live Page:** [https://ntu-info.github.io/neurosynth-frontend-chiapie/](https://ntu-info.github.io/neurosynth-frontend-chiapie/)
+🔗 **Page link:** [https://ntu-info.github.io/neurosynth-frontend-chiapie/](https://ntu-info.github.io/neurosynth-frontend-chiapie/)
 
 ---
 
