@@ -54,3 +54,11 @@ The logical query processor handles Boolean operations in the correct order:
 - **`NOT`** (exclusion)
 - **`AND`** (intersection)
 - **`OR`** (union)
+
+Logical query check:
+| Query | # of studies |
+|---------------------|------|
+| memory `AND` emotion| 76 |
+| memory `NOT` emotion| 1233 |
+| emotion `NOT` memory| 788 |
+| memory `OR` emotion | 2097 |
